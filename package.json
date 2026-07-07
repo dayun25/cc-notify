@@ -1,0 +1,43 @@
+{
+  "name": "cc-notify",
+  "version": "0.1.0",
+  "description": "Claude Code completion notifier with pluggable notification providers",
+  "private": true,
+  "main": "dist/index.js",
+  "bin": {
+    "cc-notify": "dist/cli/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "notification",
+    "toast",
+    "windows"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^26.1.0",
+    "commander": "^15.0.0",
+    "node-notifier": "^10.0.1",
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.4.1",
+    "@types/jest": "^30.0.0",
+    "@types/node-notifier": "^8.0.5",
+    "eslint": "^10.6.0",
+    "jest": "^30.4.2",
+    "prettier": "^3.9.4",
+    "ts-jest": "^29.4.11"
+  }
+}
