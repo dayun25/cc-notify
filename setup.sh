@@ -63,8 +63,19 @@ else
   echo "=== done (hook only) ==="
 fi
 
-echo ""
 echo "Files:"
 echo "  $HOOK_DIR/capture-prompt.js"
 echo "  $HOOK_DIR/notify.ps1"
 echo "  $CONFIG_DIR/style.json        (created on first save)"
+
+# Check for lark-cli (optional, for 飞书通知)
+if command -v lark-cli &>/dev/null; then
+  echo ""
+  echo "飞书通知: lark-cli detected, enabled by default"
+  echo "  If not logged in: lark-cli auth login"
+else
+  echo ""
+  echo "飞书通知: lark-cli not installed (optional)"
+  echo "  Install:  npm i -g @larksuite/cli"
+  echo "  Login:    lark-cli auth login"
+fi

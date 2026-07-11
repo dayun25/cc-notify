@@ -125,6 +125,16 @@ $label.Height = $h - 12
 $label.Location = New-Object System.Drawing.Point(10, 6)
 $form.Controls.Add($label)
 
+# === 飞书通知（如已启用）===
+$larkEnabled = if ($style.lark -and $style.lark.enabled) { $true } else { $false }
+$larkOpenId  = if ($style.lark -and $style.lark.openId)  { $style.lark.openId } else { "" }
+
+if ($larkEnabled -and $larkOpenId) {
+  $larkMsg = $title + ": " + $body
+  $larkMsg = $larkMsg -replace "'", "'\''"
+  $null = & bash -c "lark-cli im +messages-send --as bot --user-id $larkOpenId --text '$larkMsg' 2>/dev/null" 2>$null
+}
+
 $form.Show()
 $until = [DateTime]::Now.AddSeconds($duration)
 while ([DateTime]::Now -lt $until -and $form.Visible) {

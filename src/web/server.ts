@@ -20,7 +20,9 @@ function writeStyle(style: Record<string, unknown>): void {
   const dir = path.dirname(STYLE_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const existing = readStyle();
-  const merged = { ...existing, ...style };
+  // Deep-merge lark sub-object
+  const lark = { ...((existing.lark as object) || {}), ...((style.lark as object) || {}) };
+  const merged = { ...existing, ...style, lark };
   fs.writeFileSync(STYLE_PATH, JSON.stringify(merged, null, 2), 'utf-8');
 }
 
@@ -76,6 +78,10 @@ const HTML = `<!DOCTYPE html>
   .toast{position:fixed;bottom:20px;right:20px;background:#1b5e20;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;opacity:0;transition:0.3s;pointer-events:none;z-index:999}
   .toast.show{opacity:1}
   .toast.err{background:#5c1a1a}
+  .toggle{position:relative;width:44px;height:24px;background:#444;border-radius:12px;cursor:pointer;transition:0.2s;flex-shrink:0;align-self:flex-start}
+  .toggle.on{background:#e94560}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:0.2s}
+  .toggle.on::after{left:22px}
   .loading{text-align:center;padding:30px;color:#666}
 </style>
 </head>
@@ -117,8 +123,9 @@ const FIELDS = [
   {key:'position',label:'位置',type:'select',opts:['bottom-right','bottom-left','top-right','top-left']},
   {key:'width',label:'窗口宽度',type:'range',min:220,max:600,unit:'px'},
   {key:'height',label:'窗口高度',type:'range',min:40,max:300,unit:'px'},
+  {key:'lark_enabled',label:'飞书通知',type:'toggle'},
 ];
-const DEFS = {fontSize:9,fontFamily:'Microsoft YaHei',bgColor:'#323232',textColor:'#ffffff',opacity:0.95,duration:4,position:'bottom-right',width:340,height:62};
+const DEFS = {fontSize:9,fontFamily:'Microsoft YaHei',bgColor:'#323232',textColor:'#ffffff',opacity:0.95,duration:4,position:'bottom-right',width:340,height:62,lark_enabled:false,lark_openId:'ou_d2cb4962628302c41172d45290208c16'};
 let style = {...DEFS};
 
 function toast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(err?'err':'')+' show';setTimeout(()=>t.className='toast',2500)}
@@ -126,6 +133,7 @@ function toast(msg,err){const t=document.getElementById('toast');t.textContent=m
 async function loadStyle(){
   const r=await fetch('/api/style').then(x=>x.json());
   style={...DEFS,...r};
+  if(r.lark){style.lark_enabled=r.lark.enabled;if(r.lark.openId)style.lark_openId=r.lark.openId}
   renderEditor();
 }
 
@@ -134,15 +142,19 @@ function renderEditor(){
     const v=style[f.key]??DEFS[f.key];
     if(f.type==='color') return '<div class="style-item"><label>'+f.label+'</label><div class="color-row"><input type="color" id="s-'+f.key+'" value="'+v+'" onchange="changed()"><span>'+v+'</span></div></div>';
     if(f.type==='select') return '<div class="style-item"><label>'+f.label+'</label><select id="s-'+f.key+'" onchange="changed()">'+f.opts.map(o=>'<option value="'+o+'"'+(v===o?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+    if(f.type==='toggle') return '<div class="style-item"><label>'+f.label+'</label><div class="toggle'+(v?' on':'')+'" id="t-'+f.key+'" onclick="toggleCheck(this)" data-key="'+f.key+'"></div></div>';
     const step=f.step?' step="'+f.step+'"':'';
     return '<div class="style-item"><label>'+f.label+' <span id="sv-'+f.key+'" style="color:#e94560">'+v+(f.unit||'')+'</span></label><input type="range" id="s-'+f.key+'" min="'+f.min+'" max="'+f.max+'"'+step+' value="'+v+'" oninput="changed()"></div>';
   }).join('');
   updatePreview();
 }
 
+function toggleCheck(el){const k=el.getAttribute('data-key');style[k]=!style[k];renderEditor()}
+
 function getVal(key){
-  const el=document.getElementById('s-'+key);if(!el)return DEFS[key];
   const f=FIELDS.find(x=>x.key===key);
+  if(f?.type==='toggle')return style[key]||false;
+  const el=document.getElementById('s-'+key);if(!el)return DEFS[key];
   if(f?.type==='range'&&f?.step&&f.step<1)return parseFloat(el.value);
   if(f?.type==='range')return parseInt(el.value);
   return el.value;
@@ -150,6 +162,7 @@ function getVal(key){
 
 function changed(){
   FIELDS.forEach(f=>{
+    if(f.type==='toggle')return;
     style[f.key]=getVal(f.key);
     if(f.type==='range'){const sv=document.getElementById('sv-'+f.key);if(sv)sv.textContent=style[f.key]+(f.unit||'')}
   });
@@ -170,7 +183,8 @@ function updatePreview(){
 
 async function saveAndTest(){
   const msg=document.getElementById('test-msg').value.trim()||'\\u6d4b\\u8bd5\\u901a\\u77e5';
-  const data={};FIELDS.forEach(f=>{data[f.key]=getVal(f.key)});
+  const data={};FIELDS.forEach(f=>{if(f.type!=='toggle')data[f.key]=getVal(f.key)});
+  data.lark={enabled:!!style.lark_enabled,openId:DEFS.lark_openId};
   data.message=msg;
   const r=await fetch('/api/style',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(x=>x.json());
   if(r.ok) toast('\\u2705 \\u5df2\\u4fdd\\u5b58\\u5e76\\u6d4b\\u8bd5\\u901a\\u77e5');

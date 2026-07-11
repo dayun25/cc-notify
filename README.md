@@ -28,6 +28,17 @@ source ~/.bashrc
 | 仅 Hook | `bash setup.sh --hook-only` | 只要弹窗，不需要调样式 |
 | 完整 | `bash setup.sh --full` | Hook + Web 管理面板 |
 
+## 飞书通知（可选）
+
+需要先安装 `lark-cli` 并登录：
+
+```bash
+npm i -g @larksuite/cli
+lark-cli auth login
+```
+
+然后在 Web 管理面板中打开「飞书通知」开关即可。
+
 ## 使用方法
 
 ```bash
